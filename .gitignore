@@ -6,4 +6,5 @@ __pycache__/
 .ruff_cache/
 .venv/
 .DS_Store
-.claude
+.claude/
+.playwright-mcp/

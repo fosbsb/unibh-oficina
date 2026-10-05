@@ -6,12 +6,14 @@ import psycopg
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from app import extra
 from app.chat import stream_chat
 from app.config import settings
 from app.db import conectar
 from app.errors import OllamaError
+from app.llm import chat_once
 from app.ollama_client import local_client
 from app.quiz import gerar_quiz
 from app.rag import ingerir, responder
@@ -77,6 +79,16 @@ async def health():
         and settings.ollama_api_key != "cole-sua-chave-aqui",
         "chat_model": settings.chat_model,
     }
+
+
+class HelloRequest(BaseModel):
+    mensagem: str = Field(default="Responda apenas: ok", min_length=1)
+
+
+@app.post("/hello")
+async def hello(req: HelloRequest):
+    resposta = await chat_once([{"role": "user", "content": req.mensagem}])
+    return {"modelo": settings.chat_model, "resposta": resposta}
 
 
 @app.post("/chat")

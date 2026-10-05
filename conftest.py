@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,8 @@ from app.config import settings
 from app.main import app
 
 RAIZ = Path(__file__).parent
+
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 def pytest_collection_modifyitems(config, items):

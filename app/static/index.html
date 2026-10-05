@@ -43,6 +43,7 @@
   .vazio { color: var(--muted); font-size: 14px; }
   .opcao { display: flex; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; margin-top: 10px; border: 1px solid #B9C2DA; border-radius: 10px; background: #fff; font: inherit; cursor: pointer; }
   .opcao b { font-family: ui-monospace, Menlo, monospace; }
+  .opcao:disabled { color: var(--ink); cursor: default; }
   .opcao.certa { border: 2px solid var(--ok); background: var(--ok-bg); }
   .opcao.errada { border: 2px solid var(--err); background: var(--err-bg); }
   .expl { margin-top: 12px; padding: 12px 16px; background: var(--bg); border-radius: 10px; line-height: 1.5; }
@@ -58,7 +59,8 @@
 <header>
   <div class="brand">Estuda.AI</div>
   <nav role="tablist">
-    <button role="tab" data-aba="tutor" aria-selected="true">Tutor</button>
+    <button role="tab" data-aba="conexao" aria-selected="true">Conexão</button>
+    <button role="tab" data-aba="tutor" aria-selected="false">Tutor</button>
     <button role="tab" data-aba="quiz" aria-selected="false">Quiz</button>
     <button role="tab" data-aba="material" aria-selected="false">Material</button>
   </nav>
@@ -66,7 +68,22 @@
 </header>
 
 <main>
-  <section id="tutor" class="ativa">
+  <section id="conexao" class="ativa">
+    <div class="card">
+      <h2>Conexão com o modelo</h2>
+      <p class="sub">Etapa 0: o app envia a sua mensagem ao modelo da nuvem e mostra a resposta. Se funcionar, a sua chave e o seu <code>chat_once</code> estão certos.</p>
+      <form id="form-hello" class="linha">
+        <label class="grow">Mensagem
+          <input id="mensagem-hello" type="text" value="Responda apenas: ok" autocomplete="off" required>
+        </label>
+        <button class="btn" id="testar-hello" type="submit">Testar conexão</button>
+      </form>
+      <div id="erro-hello"></div>
+    </div>
+    <div id="resultado-hello"></div>
+  </section>
+
+  <section id="tutor">
     <div class="card">
       <h2>Tutor de Banco de Dados</h2>
       <p class="sub">Etapa 1: o modelo responde em streaming seguindo o papel definido no system prompt.</p>
@@ -168,6 +185,39 @@ async function saude() {
   }
 }
 saude();
+
+$("form-hello").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  mostrarErro("erro-hello", "");
+  $("resultado-hello").innerHTML = "";
+  $("testar-hello").disabled = true;
+  $("testar-hello").textContent = "Testando...";
+  try {
+    const resp = await fetch("/hello", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mensagem: $("mensagem-hello").value }),
+    });
+    if (!resp.ok) throw new Error(await lerErro(resp));
+    const dados = await resp.json();
+    const card = document.createElement("div");
+    card.className = "card";
+    const rotulo = document.createElement("div");
+    rotulo.className = "vazio";
+    rotulo.textContent = `RESPOSTA DE ${dados.modelo}`;
+    const texto = document.createElement("div");
+    texto.className = "resposta";
+    texto.style.marginTop = "8px";
+    texto.textContent = dados.resposta;
+    card.append(rotulo, texto);
+    $("resultado-hello").appendChild(card);
+  } catch (err) {
+    mostrarErro("erro-hello", err.message);
+  } finally {
+    $("testar-hello").disabled = false;
+    $("testar-hello").textContent = "Testar conexão";
+  }
+});
 
 const historico = [];
 function bolha(texto, classe) {

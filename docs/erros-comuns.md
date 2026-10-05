@@ -10,6 +10,8 @@ Comece sempre por `docker compose ps` e pelo **selo no topo da página** (http:/
 | Selo "Ollama local" vermelho | Os modelos ainda estão sendo baixados | `docker compose logs -f ollama-pull` e esperar o `success` |
 | `ollama-pull` falha | Sem internet ou disco cheio | Conferir a rede e o espaço; usar o plano B do pendrive (`docs/pre-evento.md`) |
 | Selo "pgvector" vermelho | O banco ainda está iniciando ou caiu | `docker compose ps` e `docker compose logs pgvector` |
+| `curl: command not found` ou `jq: command not found` dentro do container | A imagem do app é antiga (sem `curl` e `jq`) | Sair do container (`exit`) e rodar `docker compose up -d --build` |
+| `echo ${#OLLAMA_API_KEY}` mostra `0` dentro do container | A chave não chegou ao container | Conferir o `.env` e rodar `docker compose up -d` (fora do container) |
 | Mudou o `.env` e nada mudou | O container só lê o `.env` ao ser criado | `docker compose up -d` (recria o app) |
 | Máquina muito lenta/travando | Pouca RAM (menos de 12 GB) | Fechar outros programas; como último recurso, `RERANK_ENABLED=false` |
 | Erro de permissão ou arquivos estranhos em `app/` | Pasta com volume do Windows/WSL | Abrir o projeto dentro do WSL ou de uma pasta do usuário |
