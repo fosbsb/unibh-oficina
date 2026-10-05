@@ -1,0 +1,54 @@
+services:
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ollama-pull:
+    image: ollama/ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    env_file: .env
+    entrypoint: ["/bin/sh", "-c", "ollama pull $$EMBED_MODEL && ollama pull $$RERANK_MODEL"]
+    restart: "no"
+
+  pgvector:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_PASSWORD: oficina
+      POSTGRES_DB: oficina
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d oficina"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    working_dir: /workspace
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    volumes:
+      - .:/workspace
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      ollama-pull:
+        condition: service_completed_successfully
+      pgvector:
+        condition: service_healthy
+
+volumes:
+  ollama_models:
+  pg_data:

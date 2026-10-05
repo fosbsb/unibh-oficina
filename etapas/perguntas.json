@@ -1,0 +1,12 @@
+[
+  {"pergunta": "Como representar um relacionamento muitos-para-muitos entre alunos e disciplinas?", "fonte_esperada": "01-modelagem.md", "resposta_esperada": "Com uma tabela associativa que guarda as chaves das duas entidades."},
+  {"pergunta": "Para que serve uma chave estrangeira?", "fonte_esperada": "01-modelagem.md", "resposta_esperada": "Aponta para a chave primária de outra tabela e garante a integridade referencial."},
+  {"pergunta": "O que é uma dependência transitiva e em qual forma normal ela é eliminada?", "fonte_esperada": "02-normalizacao.md", "resposta_esperada": "Um atributo comum depende de outro atributo comum; é eliminada na 3FN."},
+  {"pergunta": "Uma coluna com vários telefones separados por vírgula viola qual forma normal?", "fonte_esperada": "02-normalizacao.md", "resposta_esperada": "A primeira forma normal (1FN), por não ser atômica."},
+  {"pergunta": "Quando um índice pode deixar o banco mais lento?", "fonte_esperada": "03-indices.md", "resposta_esperada": "Em tabelas com muita escrita, porque cada INSERT, UPDATE ou DELETE atualiza os índices."},
+  {"pergunta": "Por que uma coluna com poucos valores distintos raramente se beneficia de índice?", "fonte_esperada": "03-indices.md", "resposta_esperada": "Por ter baixa seletividade, o otimizador prefere varrer a tabela."},
+  {"pergunta": "O que significa a propriedade de atomicidade em uma transação?", "fonte_esperada": "04-transacoes.md", "resposta_esperada": "Tudo ou nada: ou todas as operações acontecem ou nenhuma."},
+  {"pergunta": "Como acontece um deadlock entre duas transações?", "fonte_esperada": "04-transacoes.md", "resposta_esperada": "Cada transação trava uma linha e espera a linha travada pela outra."},
+  {"pergunta": "Qual a diferença entre INNER JOIN e LEFT JOIN?", "fonte_esperada": "05-consultas-sql.md", "resposta_esperada": "O INNER JOIN só devolve linhas com correspondência; o LEFT JOIN mantém todas da esquerda."},
+  {"pergunta": "Qual a diferença entre WHERE e HAVING?", "fonte_esperada": "05-consultas-sql.md", "resposta_esperada": "O WHERE filtra linhas antes da agregação; o HAVING filtra grupos depois."}
+]

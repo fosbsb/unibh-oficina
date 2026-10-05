@@ -1,0 +1,15 @@
+{
+  "questoes": [
+    {
+      "enunciado": "Qual é o principal benefício de criar um índice em uma coluna muito consultada?",
+      "opcoes": [
+        "Reduz o espaço ocupado pela tabela no disco.",
+        "Acelera buscas e filtros, ao custo de escritas um pouco mais lentas.",
+        "Garante que não existam valores repetidos na coluna.",
+        "Substitui a necessidade de uma chave primária."
+      ],
+      "correta": 1,
+      "explicacao": "O índice evita varrer a tabela inteira, mas cada INSERT ou UPDATE também precisa atualizá-lo."
+    }
+  ]
+}

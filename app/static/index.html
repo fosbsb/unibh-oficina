@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estuda.AI</title>
+<style>
+  :root {
+    --ink: #14213D; --bg: #F3F5FA; --card: #FFFFFF; --line: #DDE2EE; --muted: #4B587A;
+    --accent: #3B4CCA; --ok: #1B8A5A; --ok-bg: #E7F5EE; --err: #B3261E; --err-bg: #FBE9E7;
+    --amber: #F2A33A; --amber-bg: #FDEBC8; --amber-ink: #7A4B00;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 16px 32px; background: var(--ink); color: #fff; }
+  .brand { font-weight: 600; font-size: 20px; margin-right: 16px; }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  nav button { background: none; border: 0; color: #fff; font: inherit; font-weight: 500; padding: 10px 16px; border-radius: 8px; cursor: pointer; min-height: 44px; }
+  nav button:hover { background: #24335C; }
+  nav button[aria-selected="true"] { background: #2F4075; font-weight: 600; }
+  #chip { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: #1E2D52; border: 1px solid #3A4B80; color: #E6EAF5; border-radius: 999px; padding: 8px 14px; display: flex; gap: 8px; align-items: center; }
+  #chip i { width: 8px; height: 8px; border-radius: 50%; background: #F2A33A; display: inline-block; }
+  #chip.ok i { background: #4ADE9A; }
+  #chip.ruim i { background: #FF8A80; }
+  main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
+  section { display: none; }
+  section.ativa { display: block; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; margin-bottom: 16px; }
+  h2 { margin: 0 0 4px; font-size: 20px; }
+  .sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+  .linha { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+  label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 500; color: var(--muted); }
+  input, select { min-height: 48px; padding: 0 14px; border: 1px solid #B9C2DA; border-radius: 10px; font: inherit; font-size: 16px; color: var(--ink); background: #fff; }
+  .grow { flex: 1 1 260px; }
+  .btn { min-height: 48px; padding: 0 24px; border: 0; border-radius: 10px; font: inherit; font-weight: 600; font-size: 16px; color: #fff; background: var(--accent); cursor: pointer; }
+  .btn.sec { background: #fff; color: var(--ink); border: 1px solid #B9C2DA; }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  #msgs { display: flex; flex-direction: column; gap: 14px; min-height: 280px; max-height: 55vh; overflow-y: auto; padding: 4px; }
+  .bolha { max-width: 85%; padding: 12px 16px; border-radius: 16px; line-height: 1.55; white-space: pre-wrap; }
+  .eu { align-self: flex-end; background: var(--ink); color: #fff; border-radius: 16px 16px 4px 16px; }
+  .ia { align-self: flex-start; background: var(--bg); border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; }
+  .erro { background: var(--err-bg); color: var(--err); border: 1px solid #F2B8B5; border-radius: 10px; padding: 12px 16px; margin-top: 12px; }
+  .vazio { color: var(--muted); font-size: 14px; }
+  .opcao { display: flex; gap: 12px; width: 100%; text-align: left; padding: 12px 16px; margin-top: 10px; border: 1px solid #B9C2DA; border-radius: 10px; background: #fff; font: inherit; cursor: pointer; }
+  .opcao b { font-family: ui-monospace, Menlo, monospace; }
+  .opcao.certa { border: 2px solid var(--ok); background: var(--ok-bg); }
+  .opcao.errada { border: 2px solid var(--err); background: var(--err-bg); }
+  .expl { margin-top: 12px; padding: 12px 16px; background: var(--bg); border-radius: 10px; line-height: 1.5; }
+  .fonte { border-left: 4px solid var(--amber); }
+  .fonte .topo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 16px; }
+  .fonte code { font-weight: 600; }
+  .fonte small { color: var(--muted); }
+  .fonte p { margin: 8px 0 0; color: var(--muted); line-height: 1.5; white-space: pre-wrap; }
+  .resposta { line-height: 1.65; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Estuda.AI</div>
+  <nav role="tablist">
+    <button role="tab" data-aba="tutor" aria-selected="true">Tutor</button>
+    <button role="tab" data-aba="quiz" aria-selected="false">Quiz</button>
+    <button role="tab" data-aba="material" aria-selected="false">Material</button>
+  </nav>
+  <div id="chip"><i></i><span id="chip-texto">verificando...</span></div>
+</header>
+
+<main>
+  <section id="tutor" class="ativa">
+    <div class="card">
+      <h2>Tutor de Banco de Dados</h2>
+      <p class="sub">Etapa 1: o modelo responde em streaming seguindo o papel definido no system prompt.</p>
+      <div id="msgs"><span class="vazio">Faça uma pergunta para começar.</span></div>
+      <div id="erro-chat"></div>
+      <form id="form-chat" class="linha" style="margin-top:16px">
+        <label class="grow">Mensagem para o tutor
+          <input id="entrada-chat" type="text" placeholder="Pergunte algo sobre Banco de Dados" autocomplete="off" required>
+        </label>
+        <button class="btn" id="enviar-chat" type="submit">Enviar</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="quiz">
+    <div class="card">
+      <h2>Quiz</h2>
+      <p class="sub">Etapa 2: o modelo gera as questões em JSON e o app valida antes de mostrar.</p>
+      <form id="form-quiz" class="linha">
+        <label class="grow">Tema
+          <select id="tema">
+            <option>Modelagem de dados</option>
+            <option>Normalização</option>
+            <option selected>Índices</option>
+            <option>Transações</option>
+            <option>Consultas SQL</option>
+          </select>
+        </label>
+        <label style="width:120px">Questões
+          <input id="n" type="number" min="1" max="10" value="3">
+        </label>
+        <button class="btn" id="gerar-quiz" type="submit">Gerar quiz</button>
+      </form>
+      <div id="erro-quiz"></div>
+    </div>
+    <div id="questoes"></div>
+  </section>
+
+  <section id="material">
+    <div class="card">
+      <h2>Pergunte ao material</h2>
+      <p class="sub">Etapa 3: o app busca trechos da apostila e o modelo responde citando as fontes.</p>
+      <div class="linha" style="margin-bottom:16px">
+        <button class="btn sec" id="indexar" type="button">Indexar material</button>
+        <span id="status-index" class="vazio"></span>
+      </div>
+      <form id="form-ask" class="linha">
+        <label class="grow">Pergunta sobre o material
+          <input id="pergunta" type="text" placeholder="Quando um índice pode deixar o banco mais lento?" autocomplete="off" required>
+        </label>
+        <button class="btn" id="perguntar" type="submit">Perguntar</button>
+      </form>
+      <div id="erro-ask"></div>
+    </div>
+    <div id="resultado"></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+document.querySelectorAll("nav button").forEach((b) => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach((x) => x.setAttribute("aria-selected", x === b));
+    document.querySelectorAll("section").forEach((s) => s.classList.toggle("ativa", s.id === b.dataset.aba));
+  });
+});
+
+function mostrarErro(id, texto) {
+  const el = $(id);
+  el.innerHTML = "";
+  if (!texto) return;
+  const d = document.createElement("div");
+  d.className = "erro";
+  d.textContent = texto;
+  el.appendChild(d);
+}
+
+async function lerErro(resp) {
+  try { return (await resp.json()).erro || `Erro ${resp.status}`; }
+  catch { return `Erro ${resp.status}`; }
+}
+
+async function saude() {
+  try {
+    const h = await (await fetch("/health")).json();
+    const chip = $("chip");
+    const problemas = [];
+    if (!h.chave_configurada) problemas.push("chave não configurada");
+    if (!h.ollama_local || !h.modelos_locais) problemas.push("Ollama local");
+    if (!h.pgvector) problemas.push("pgvector");
+    chip.className = problemas.length ? "ruim" : "ok";
+    $("chip-texto").textContent = problemas.length
+      ? `${h.chat_model} · atenção: ${problemas.join(", ")}`
+      : `${h.chat_model} · Ollama Cloud`;
+  } catch {
+    $("chip").className = "ruim";
+    $("chip-texto").textContent = "app indisponível";
+  }
+}
+saude();
+
+const historico = [];
+function bolha(texto, classe) {
+  const vazio = $("msgs").querySelector(".vazio");
+  if (vazio) vazio.remove();
+  const d = document.createElement("div");
+  d.className = `bolha ${classe}`;
+  d.textContent = texto;
+  $("msgs").appendChild(d);
+  $("msgs").scrollTop = $("msgs").scrollHeight;
+  return d;
+}
+
+$("form-chat").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const texto = $("entrada-chat").value.trim();
+  if (!texto) return;
+  $("entrada-chat").value = "";
+  mostrarErro("erro-chat", "");
+  bolha(texto, "eu");
+  historico.push({ role: "user", content: texto });
+  const saida = bolha("...", "ia");
+  $("enviar-chat").disabled = true;
+  try {
+    const resp = await fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: historico }),
+    });
+    if (!resp.ok) throw new Error(await lerErro(resp));
+    const leitor = resp.body.getReader();
+    const decodificador = new TextDecoder();
+    let total = "";
+    for (;;) {
+      const { done, value } = await leitor.read();
+      if (done) break;
+      total += decodificador.decode(value, { stream: true });
+      saida.textContent = total;
+      $("msgs").scrollTop = $("msgs").scrollHeight;
+    }
+    historico.push({ role: "assistant", content: total });
+  } catch (err) {
+    saida.remove();
+    historico.pop();
+    mostrarErro("erro-chat", err.message);
+  } finally {
+    $("enviar-chat").disabled = false;
+    $("entrada-chat").focus();
+  }
+});
+
+$("form-quiz").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  mostrarErro("erro-quiz", "");
+  $("questoes").innerHTML = "";
+  $("gerar-quiz").disabled = true;
+  $("gerar-quiz").textContent = "Gerando...";
+  try {
+    const resp = await fetch("/quiz", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tema: $("tema").value, n: Number($("n").value) }),
+    });
+    if (!resp.ok) throw new Error(await lerErro(resp));
+    const quiz = await resp.json();
+    quiz.questoes.forEach((q, i) => desenharQuestao(q, i, quiz.questoes.length));
+  } catch (err) {
+    mostrarErro("erro-quiz", err.message);
+  } finally {
+    $("gerar-quiz").disabled = false;
+    $("gerar-quiz").textContent = "Gerar quiz";
+  }
+});
+
+function desenharQuestao(q, i, total) {
+  const card = document.createElement("div");
+  card.className = "card";
+  const topo = document.createElement("div");
+  topo.className = "vazio";
+  topo.textContent = `Questão ${i + 1} de ${total}`;
+  const enun = document.createElement("div");
+  enun.style.cssText = "font-weight:600;font-size:18px;margin:6px 0 4px;line-height:1.4";
+  enun.textContent = q.enunciado;
+  card.append(topo, enun);
+  const botoes = q.opcoes.map((texto, j) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "opcao";
+    const letra = document.createElement("b");
+    letra.textContent = "ABCD"[j];
+    const t = document.createElement("span");
+    t.textContent = texto;
+    b.append(letra, t);
+    card.appendChild(b);
+    return b;
+  });
+  botoes.forEach((b, j) => b.addEventListener("click", () => {
+    botoes.forEach((x) => (x.disabled = true));
+    botoes[q.correta].classList.add("certa");
+    if (j !== q.correta) b.classList.add("errada");
+    const expl = document.createElement("div");
+    expl.className = "expl";
+    expl.textContent = `Explicação: ${q.explicacao}`;
+    card.appendChild(expl);
+  }));
+  $("questoes").appendChild(card);
+}
+
+$("indexar").addEventListener("click", async () => {
+  mostrarErro("erro-ask", "");
+  $("indexar").disabled = true;
+  $("status-index").textContent = "Indexando...";
+  try {
+    const resp = await fetch("/ingest", { method: "POST" });
+    if (!resp.ok) throw new Error(await lerErro(resp));
+    const dados = await resp.json();
+    $("status-index").textContent = `${dados.trechos_indexados} trechos indexados.`;
+  } catch (err) {
+    $("status-index").textContent = "";
+    mostrarErro("erro-ask", err.message);
+  } finally {
+    $("indexar").disabled = false;
+  }
+});
+
+$("form-ask").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  mostrarErro("erro-ask", "");
+  $("resultado").innerHTML = "";
+  $("perguntar").disabled = true;
+  $("perguntar").textContent = "Buscando...";
+  try {
+    const resp = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pergunta: $("pergunta").value }),
+    });
+    if (!resp.ok) throw new Error(await lerErro(resp));
+    desenharResposta(await resp.json());
+  } catch (err) {
+    mostrarErro("erro-ask", err.message);
+  } finally {
+    $("perguntar").disabled = false;
+    $("perguntar").textContent = "Perguntar";
+  }
+});
+
+function desenharResposta(dados) {
+  const card = document.createElement("div");
+  card.className = "card";
+  const rotulo = document.createElement("div");
+  rotulo.className = "vazio";
+  rotulo.textContent = "RESPOSTA COM BASE NO MATERIAL";
+  const texto = document.createElement("div");
+  texto.className = "resposta";
+  texto.style.marginTop = "8px";
+  texto.textContent = dados.resposta;
+  card.append(rotulo, texto);
+  $("resultado").appendChild(card);
+
+  (dados.fontes || []).forEach((f, i) => {
+    const c = document.createElement("div");
+    c.className = "card fonte";
+    const topo = document.createElement("div");
+    topo.className = "topo";
+    const nome = document.createElement("code");
+    nome.textContent = `[${i + 1}] corpus/${f.fonte}`;
+    const metricas = document.createElement("small");
+    let m = `similaridade ${f.similaridade.toFixed(2)}`;
+    if (typeof f.rerank === "number") m += ` · rerank ${f.rerank.toFixed(2)}`;
+    metricas.textContent = m;
+    topo.append(nome, metricas);
+    const p = document.createElement("p");
+    p.textContent = f.trecho;
+    c.append(topo, p);
+    $("resultado").appendChild(c);
+  });
+}
+</script>
+</body>
+</html>

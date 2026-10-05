@@ -1,0 +1,9 @@
+line-length = 100
+
+[lint.per-file-ignores]
+"app/llm.py" = ["F401"]
+"app/chat.py" = ["F401"]
+"app/schemas.py" = ["F401"]
+"app/quiz.py" = ["F401"]
+"app/rag.py" = ["F401"]
+"app/extra.py" = ["F401"]
