@@ -29,13 +29,22 @@ def carregar_chunks() -> list[dict]:
     return chunks
 
 
+def texto_de_trecho(chunk: dict) -> str:
+    # Prefixo de tarefa para os trechos do material (já pronto; use em ingerir).
+    return f"title: {chunk['titulo']} | text: {chunk['trecho']}"
+
+
+def texto_de_pergunta(pergunta: str) -> str:
+    # Prefixo de tarefa para perguntas (já pronto; use antes de embed na busca).
+    return f"task: search result | query: {pergunta}"
+
+
 async def embed(textos: list[str]) -> list[list[float]]:
     # ETAPA 3 (1/5) - transforme textos em vetores usando o Ollama LOCAL.
     #   POST /api/embed com {"model": settings.embed_model, "input": textos}
     #   (use "async with local_client() as client"). A resposta tem a chave "embeddings".
-    #   Dica: o modelo rende melhor com prefixos de tarefa, por exemplo
-    #   "task: search result | query: <pergunta>" para perguntas e
-    #   "title: <titulo> | text: <trecho>" para os trechos do material.
+    #   Dica: o modelo rende melhor com prefixos de tarefa. Use texto_de_trecho(chunk) para os
+    #   trechos e texto_de_pergunta(pergunta) para a pergunta (já estão prontas acima).
     raise NotImplementedError("Etapa 3: implemente embed em app/rag.py")
 
 
@@ -58,6 +67,15 @@ def buscar(vetor: list[float], k: int) -> list[dict]:
     raise NotImplementedError("Etapa 3: implemente buscar em app/rag.py")
 
 
+def pontuar(resposta: dict) -> float:
+    # ETAPA 3 (4/5, opcional) - converta a resposta do reranker em uma nota de 0 a 1.
+    #   Os tokens candidatos estão em resposta["logprobs"][0]["top_logprobs"], cada um com
+    #   "token" e "logprob". Some exp(logprob) dos tokens "yes" (P_yes) e "no" (P_no), ignorando
+    #   maiúsculas e espaços ("Yes" conta como "yes"), e devolva P_yes / (P_yes + P_no).
+    #   Se nenhum token for yes/no, levante ValueError. (import math)
+    raise NotImplementedError("Etapa 3: implemente pontuar em app/rag.py")
+
+
 async def rerank(pergunta: str, candidatos: list[dict]) -> list[dict]:
     # ETAPA 3 (4/5, opcional) - reordene os candidatos com o modelo de reranking local.
     #   Para cada candidato, chame POST /api/generate com raw=True, stream=False,
@@ -65,7 +83,7 @@ async def rerank(pergunta: str, candidatos: list[dict]) -> list[dict]:
     #   O prompt segue o formato do Qwen3-Reranker: system com a regra "yes"/"no",
     #   user com <Instruct>, <Query> e <Document>, e o início da resposta do assistente
     #   com um bloco <think></think> vazio. O score é P(yes) / (P(yes) + P(no)),
-    #   calculado a partir das probabilidades (exp do logprob) dos tokens "yes" e "no".
+    #   calculado por pontuar(resposta), a partir dos tokens "yes" e "no".
     #   Devolva os candidatos com a chave "rerank" (o score), do maior para o menor.
     #   Se qualquer coisa falhar, devolva os candidatos na ordem original.
     # Enquanto não implementar, os candidatos seguem na ordem da busca vetorial.

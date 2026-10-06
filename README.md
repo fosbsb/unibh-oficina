@@ -236,7 +236,7 @@ Sem o `| jq ...` no final, você vê o JSON inteiro, com `thinking`, tempos e co
 ### Passo a passo
 
 1. Abra [app/chat.py](app/chat.py).
-2. Escreva o `SYSTEM_PROMPT`: quem o modelo é, em que idioma responde, o que deve e o que não deve fazer (por exemplo, guiar com perguntas em vez de dar a resposta de exercícios).
+2. Escreva o `SYSTEM_PROMPT`: quem o modelo é, em que idioma responde, o que deve e o que não deve fazer (por exemplo, guiar com perguntas em vez de dar a resposta de exercícios). A tela mostra **texto puro**: peça também resposta em texto corrido, **sem Markdown** (senão aparecem `**` e tabelas quebradas) e curta.
 3. Implemente `stream_chat`:
    - monte o `payload` com `stream: True` e a lista `[system, *messages]`;
    - use `client.stream("POST", "/api/chat", json=payload)`;
@@ -425,10 +425,11 @@ Na resposta, `"resposta": "yes"` e, em `top`, algo como `yes: -0.2`, `Yes: -1.85
 
 1. Leia os arquivos em [corpus/](corpus/): são 5 mini-apostilas de Banco de Dados.
 2. Abra [app/rag.py](app/rag.py). O `carregar_chunks` já divide as apostilas em trechos. Implemente, na ordem:
+   0. Já estão prontas `texto_de_trecho` e `texto_de_pergunta` (prefixos de tarefa que o modelo de embedding espera): use-as em `ingerir` e em `responder`;
    1. `embed`: `POST /api/embed` no Ollama **local**, com `{"model": ..., "input": [textos]}`;
    2. `ingerir`: gere os embeddings e grave os trechos na tabela `chunks` do pgvector;
    3. `buscar`: o SQL `ORDER BY embedding <=> %s` (distância de cosseno) devolve os mais parecidos;
-   4. `rerank` (opcional): o modelo local `Qwen3-Reranker` dá a cada trecho uma nota de 0 a 1 (a probabilidade de ele responder "yes" à pergunta), e você reordena do maior para o menor. Os comentários do arquivo explicam o formato do prompt. Enquanto não fizer, os candidatos ficam na ordem da busca;
+   4. `pontuar` e `rerank` (opcionais, mas os testes do reranker só passam com eles): `pontuar(resposta)` converte os `logprobs` em nota e `rerank` a usa. O modelo local `Qwen3-Reranker` dá a cada trecho uma nota de 0 a 1 (a probabilidade de ele responder "yes" à pergunta), e você reordena do maior para o menor. Os comentários do arquivo explicam o formato do prompt. Enquanto não fizer, os candidatos ficam na ordem da busca;
    5. `responder`: junte tudo, recuse quando nada for relevante e peça ao modelo da nuvem que responda **só com base nos trechos**, citando `[1]`, `[2]`.
 3. Na aba **Material**, clique em **Indexar material** e pergunte: *"Quando um índice pode deixar o banco mais lento?"*
 4. Pergunte algo fora do material (*"Qual a capital da França?"*): o app deve dizer que não encontrou, sem chamar o modelo.
@@ -442,7 +443,7 @@ Na resposta, `"resposta": "yes"` e, em `top`, algo como `yes: -0.2`, `Yes: -1.85
 docker compose exec app pytest etapas/etapa-3
 ```
 
-Todos os testes devem terminar em `PASSED`. Um deles mede se, em pelo menos 8 de 10 perguntas, o trecho certo aparece entre os recuperados; outro confirma que uma pergunta fora do material não chama o modelo.
+Todos os testes devem terminar em `PASSED`. **Demora**: na primeira vez, de 1 a 3 minutos, porque o Ollama local carrega os modelos na memória (nas execuções seguintes, cerca de 1 minuto); o mesmo atraso aparece na primeira indexação ou pergunta pela tela (o botão fica em "Indexando..." / "Buscando..."). Um dos testes mede se, em pelo menos 8 de 10 perguntas, o trecho certo aparece entre os recuperados; outro confirma que uma pergunta fora do material não chama o modelo.
 
 #### 2. Pelo `curl`
 
@@ -496,7 +497,7 @@ docker compose exec pgvector psql -U postgres -d oficina -c "SELECT fonte, titul
 
 Use o que construiu para criar algo seu. A rota `GET /extra/ping` em [app/extra.py](app/extra.py) já está incluída no app: acrescente suas rotas ali.
 
-Sugestão: um **quiz sobre o material**. Receba um tema, recupere os trechos com `embed`, `buscar` e `rerank`, passe-os como `contexto` para `gerar_quiz` e devolva as questões. Outras ideias: resumir um arquivo do corpus, gerar flashcards, avaliar a resposta escrita de um aluno.
+Sugestão: um **quiz sobre o material**. Receba um tema, recupere os trechos com `texto_de_pergunta`, `embed`, `buscar` e `rerank`, passe-os como `contexto` para `gerar_quiz` e devolva as questões. Outras ideias: resumir um arquivo do corpus, gerar flashcards, avaliar a resposta escrita de um aluno.
 
 ### Como verificar
 
