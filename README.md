@@ -1,4 +1,35 @@
-# Estuda.AI: usando um LLM dentro do seu app
+<div align="center">
+
+# Estuda.AI
+
+**Usando um LLM dentro do seu app**: oficina prática da UniBH
+
+![Oficina](https://img.shields.io/badge/oficina-UniBH%202026-1e3a8a?style=for-the-badge)
+![Duração](https://img.shields.io/badge/dura%C3%A7%C3%A3o-~4h-0ea5e9?style=for-the-badge)
+![Nível](https://img.shields.io/badge/n%C3%ADvel-iniciante%20a%20intermedi%C3%A1rio-64748b?style=for-the-badge)
+
+**IA**
+
+![LLM](https://img.shields.io/badge/LLM-API%20de%20chat-7c3aed?logo=openai&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Cloud%20%2B%20local-000000?logo=ollama&logoColor=white)
+![RAG](https://img.shields.io/badge/RAG-busca%20vetorial-16a34a)
+![Embeddings](https://img.shields.io/badge/embeddings-768%20dim-f59e0b)
+![Reranker](https://img.shields.io/badge/reranker-Qwen3-ea580c)
+![Saída estruturada](https://img.shields.io/badge/sa%C3%ADda-JSON%20validado-db2777)
+
+**Desenvolvimento**
+
+![Python](https://img.shields.io/badge/Python-3.12-3776ab?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?logo=fastapi&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-e92063?logo=pydantic&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%2B%20pgvector-4169e1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ed?logo=docker&logoColor=white)
+![pytest](https://img.shields.io/badge/testes-pytest-0a9edc?logo=pytest&logoColor=white)
+![Ruff](https://img.shields.io/badge/lint-Ruff-d7ff64?logo=ruff&logoColor=black)
+
+</div>
+
+---
 
 Oficina da UniBH. Em ~4 horas você constrói, etapa por etapa, um assistente de estudos de Banco de Dados que **usa um modelo de linguagem como parte do sistema**: o app chama o modelo por API, valida o que ele devolve e o ancora em um material próprio.
 
