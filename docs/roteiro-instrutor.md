@@ -44,7 +44,6 @@ Os tempos somam ~4h40 com abertura, pausa e encerramento. Se o tempo apertar, a 
 - **Explicação (10 min):** o app precisa de dados, não de texto. Mostrar o `Quiz` do Pydantic e o `quiz_exemplo.json`.
 - **Ponto de parada:** conversar sobre o retry. Provocar: "e se o modelo errar três vezes?" (o app devolve erro claro, e não dado quebrado).
 - **Pergunta para a turma:** "Por que validar se o modelo é inteligente?"
-- **Desafio extra:** o parâmetro `format` com JSON Schema.
 
 ## Etapa 3: RAG (70 min)
 

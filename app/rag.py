@@ -98,6 +98,7 @@ async def responder(pergunta: str, k: int | None = None) -> dict:
     #   4. se não houver relevantes, devolva {"resposta": "Não encontrei isso no material.",
     #      "fontes": []} sem chamar o modelo
     #   5. senão, monte o contexto numerado [1], [2]... e peça ao modelo (chat_once) que responda
-    #      só com base nos trechos, citando as fontes
+    #      só com base nos trechos, citando as fontes, em texto corrido, sem Markdown e curto
+    #      (a tela da aba Material já sabe mostrar Markdown: ligá-lo é o desafio extra)
     #   6. devolva {"resposta": texto, "fontes": relevantes}
     raise NotImplementedError("Etapa 3: implemente responder em app/rag.py")

@@ -396,6 +396,23 @@ O resultado é o texto da resposta, chegando aos poucos.
 
 Faça o tutor lembrar do que foi dito antes (o histórico já chega em `messages`). Depois, limite o histórico às últimas 6 mensagens e explique por que isso importa (custo e tamanho de contexto).
 
+> [!NOTE]
+> **Como limitar as mensagens.** O navegador envia o histórico inteiro a cada pergunta, então o corte é feito em `stream_chat`, ao montar o `payload`. Use uma fatia da lista em vez de `messages` inteira:
+>
+> ```python
+> ULTIMAS = 6
+> recentes = messages[-ULTIMAS:]
+> payload = {
+>     "model": settings.chat_model,
+>     "stream": True,
+>     "messages": [{"role": "system", "content": SYSTEM_PROMPT}, *recentes],
+> }
+> ```
+>
+> - O `SYSTEM_PROMPT` fica **fora** do corte: ele vai sempre, no início, senão o tutor perde o papel quando a conversa cresce.
+> - Como a lista termina na pergunta atual (`user`), uma fatia de tamanho par pode começar numa resposta do `assistant`. Se isso incomodar, descarte a primeira mensagem quando ela não for do `user`.
+> - Por que importa: cada chamada reenvia o histórico, e o modelo cobra e limita por **tokens**. Menos mensagens deixam a resposta mais rápida e barata, e evitam estourar a janela de contexto, ao custo de o tutor esquecer o começo da conversa.
+
 ---
 
 ## Etapa 2: Quiz em JSON validado (60 min)
@@ -481,10 +498,6 @@ O resultado é um JSON com `questoes`, cada uma com `enunciado`, 4 `opcoes`, `co
 | Erro de validação por `opcoes` | Confira `min_length=4` e `max_length=4` |
 | A conta atingiu o limite | A etapa faz até 3 chamadas seguidas no pior caso; aguarde e tente de novo |
 
-### Desafio extra
-
-Experimente o parâmetro `format` da API (um JSON Schema gerado por `Quiz.model_json_schema()`) para forçar o formato na origem. Funciona com o modelo que você escolheu? E se o modelo ignorar o `format`, a sua validação continua protegendo o app?
-
 ---
 
 ## Etapa 3: Pergunte ao material, o RAG (70 min)
@@ -500,6 +513,67 @@ O **reranker** é um segundo modelo, menor, que relê os trechos candidatos e p�
 ### Objetivo
 
 A aba **Material** responde com base em `corpus/` e mostra as fontes usadas.
+
+### Visão geral: o caminho dos dados
+
+O RAG tem duas fases. Os números das caixas são os mesmos do **Passo a passo** abaixo.
+
+**Fase 1: indexar o material** (uma vez, ao clicar em **Indexar material**). O app transforma cada trecho da apostila em um vetor e guarda no pgvector.
+
+```text
+┌────────────────┐   ┌───────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐
+│ corpus/*.md    │   │ carregar_chunks   │   │ 1. embed              │   │ 2. ingerir            │
+│                │──►│ divide em trechos │──►│ Ollama local          │──►│ grava os trechos e    │
+│ 5 apostilas    │   │ (23 trechos)      │   │ texto → 768 números   │   │ vetores no pgvector   │
+└────────────────┘   └───────────────────┘   └───────────────────────┘   └───────────────────────┘
+```
+
+**Fase 2: responder uma pergunta** (a cada pergunta na aba **Material**). O app acha os trechos mais parecidos, confere se são relevantes e só então chama o modelo da nuvem.
+
+```text
+ "Quando um índice pode deixar o banco mais lento?"
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────┐
+│ 1. embed  (Ollama local)                               │
+│ a pergunta vira um vetor de 768 números                │
+└─────────────────────────────┬──────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────┐
+│ 3. buscar  (pgvector)                                  │
+│ ORDER BY embedding <=> vetor  LIMIT k                  │
+│ devolve os k trechos mais parecidos                    │
+└─────────────────────────────┬──────────────────────────┘
+                              │
+                              ▼
+┌────────────────────────────────────────────────────────┐
+│ 4. rerank  (Ollama local, opcional)                    │
+│ nota de 0 a 1 por trecho: P(yes) / (P(yes) + P(no))    │
+│ reordena do maior para o menor                         │
+└─────────────────────────────┬──────────────────────────┘
+                              │
+                              ▼
+        ◇ algum trecho com similaridade ≥ SIM_MIN ? ◇
+                              │
+                   ┌──────────┴─────────────────────────────┐
+                  não                                      sim
+                   ▼                                        ▼
+┌────────────────────────────────────┐  ┌──────────────────────────────────────┐
+│ "Não encontrei isso no material."  │  │ 5. responder  (Ollama Cloud)         │
+│                                    │  │ trechos numerados [1], [2]...        │
+│ sem chamar o modelo                │  │ + pergunta  →  resposta que          │
+└────────────────────────────────────┘  │ cita as fontes                       │
+                                        └──────────────────────────────────────┘
+```
+
+| Passo | Função em `app/rag.py` | Onde roda | O que acontece |
+|---|---|---|---|
+| 1 | `embed` | Ollama local | Texto vira vetor de 768 números; textos parecidos geram vetores próximos |
+| 2 | `ingerir` | pgvector | Grava `fonte`, `titulo`, `trecho` e o vetor na tabela `chunks` |
+| 3 | `buscar` | pgvector | Compara o vetor da pergunta com os dos trechos (distância de cosseno) e devolve os `k` mais parecidos |
+| 4 | `pontuar` e `rerank` | Ollama local | Um modelo menor relê cada trecho e dá uma nota; reordena do mais para o menos relevante (opcional) |
+| 5 | `responder` | Ollama Cloud | Se nenhum trecho passa de `SIM_MIN`, recusa **sem chamar o modelo**; senão pede a resposta citando `[1]`, `[2]` |
 
 ### Experimente com curl
 
@@ -541,7 +615,7 @@ Na resposta, `"resposta": "yes"` e, em `top`, algo como `yes: -0.2`, `Yes: -1.85
    2. `ingerir`: gere os embeddings e grave os trechos na tabela `chunks` do pgvector;
    3. `buscar`: o SQL `ORDER BY embedding <=> %s` (distância de cosseno) devolve os mais parecidos;
    4. `pontuar` e `rerank` (opcionais, mas os testes do reranker só passam com eles): `pontuar(resposta)` converte os `logprobs` em nota e `rerank` a usa. O modelo local `Qwen3-Reranker` dá a cada trecho uma nota de 0 a 1 (a probabilidade de ele responder "yes" à pergunta), e você reordena do maior para o menor. Os comentários do arquivo explicam o formato do prompt. Enquanto não fizer, os candidatos ficam na ordem da busca;
-   5. `responder`: junte tudo, recuse quando nada for relevante e peça ao modelo da nuvem que responda **só com base nos trechos**, citando `[1]`, `[2]`.
+   5. `responder`: junte tudo, recuse quando nada for relevante e peça ao modelo da nuvem que responda **só com base nos trechos**, citando `[1]`, `[2]`, em **texto corrido, sem Markdown** e curta (no Desafio extra você liga o Markdown).
 3. Na aba **Material**, clique em **Indexar material** e pergunte: *"Quando um índice pode deixar o banco mais lento?"*
 4. Pergunte algo fora do material (*"Qual a capital da França?"*): o app deve dizer que não encontrou, sem chamar o modelo.
 5. Veja no terminal (`docker compose logs -f app`) as notas de similaridade de cada trecho.
@@ -585,6 +659,133 @@ Repita com uma pergunta fora do material (`"Qual a capital da França?"`): a res
 
 ![Etapa 3 na interface: indexação, resposta com fontes e pergunta fora do material](docs/img/etapa-3.gif)
 
+### Do embed ao banco e à pergunta (exemplo guiado)
+
+Aqui você acompanha **um dado do começo ao fim**: o texto vira vetor, o vetor é gravado no banco, e a pergunta busca de volta. Use **dois terminais**:
+
+- **Terminal A** (dentro do container do app, para `curl` e Python): `docker compose exec app bash`
+- **Terminal B** (no seu computador, fora do container, para olhar o banco): `docker compose exec pgvector psql -U postgres -d oficina`. Isso abre o `psql`; para sair, digite `\q`.
+
+> [!NOTE]
+> Os resultados abaixo são de referência. Os números de similaridade podem variar um pouco na sua máquina. O que importa é o **formato**: 768 dimensões, 23 trechos e o trecho certo no topo.
+
+**1. Antes de gravar: o banco**
+
+Terminal B:
+
+```sql
+SELECT count(*) FROM chunks;
+```
+
+Se você nunca indexou, o resultado é `0` (a tabela existe, criada por `db/init.sql`, mas está vazia).
+
+**2. Embed: o texto vira vetor**
+
+Terminal A, com um dos trechos da apostila:
+
+```bash
+curl -s http://ollama:11434/api/embed \
+  -d '{"model":"embeddinggemma:300m","input":["title: O custo das escritas | text: Todo índice é mantido a cada escrita na tabela."]}' \
+  | jq '{dimensoes: (.embeddings[0] | length), primeiros: .embeddings[0][:3]}'
+```
+
+Resultado: `"dimensoes": 768` e uma lista de números pequenos (positivos e negativos). Esse vetor de 768 posições é o que o `embed` devolve para cada trecho.
+
+**3. Gravar: indexar o material**
+
+Terminal A (ou clique em **Indexar material** na tela):
+
+```bash
+curl -s -X POST http://localhost:8000/ingest | jq
+```
+
+Resultado: `{"trechos_indexados": 23}`. É o `ingerir`: para cada trecho, ele chamou o `embed` e gravou uma linha na tabela `chunks`.
+
+**4. Conferir o que foi salvo**
+
+Terminal B. Primeiro, quantos trechos há por apostila:
+
+```sql
+SELECT fonte, count(*) AS trechos FROM chunks GROUP BY fonte ORDER BY fonte;
+```
+
+```text
+        fonte        | trechos
+---------------------+---------
+ 01-modelagem.md     |       4
+ 02-normalizacao.md  |       5
+ 03-indices.md       |       5
+ 04-transacoes.md    |       4
+ 05-consultas-sql.md |       5
+```
+
+A soma é 23, o mesmo número do `/ingest`. Agora, o tamanho de cada vetor gravado:
+
+```sql
+SELECT fonte, titulo, vector_dims(embedding) AS dimensoes FROM chunks ORDER BY id LIMIT 3;
+```
+
+```text
+      fonte      |               titulo               | dimensoes
+-----------------+------------------------------------+-----------
+ 01-modelagem.md | Entidades e atributos              |       768
+ 01-modelagem.md | Relacionamentos e cardinalidade    |       768
+ 01-modelagem.md | Chave primária e chave estrangeira |       768
+```
+
+Todos com `768`, o mesmo tamanho da coluna `embedding vector(768)` em `db/init.sql`. Para **ver** o vetor (só o começo, ele é longo):
+
+```sql
+SELECT titulo, left(embedding::text, 60) || '...' AS vetor FROM chunks ORDER BY id LIMIT 2;
+```
+
+Indexar de novo **não duplica**: rode o passo 3 outra vez e repita `SELECT count(*) FROM chunks;`. Deve continuar `23`, porque o `ingerir` apaga a tabela (`TRUNCATE`) antes de gravar.
+
+**5. Perguntar: a busca vetorial no banco**
+
+A pergunta também vira vetor (com `embed`) e o banco devolve os trechos mais próximos. Para ver **só essa busca**, sem chamar o modelo da nuvem, rode no Terminal A:
+
+```bash
+python - <<'EOF'
+import asyncio
+from app.rag import embed, texto_de_pergunta, buscar
+
+[vetor] = asyncio.run(embed([texto_de_pergunta("Quando um índice pode deixar o banco mais lento?")]))
+print(len(vetor), "dimensões")
+for c in buscar(vetor, 4):
+    print(f"{c['similaridade']:.3f}  {c['fonte']}  {c['titulo']}")
+EOF
+```
+
+```text
+768 dimensões
+0.528  03-indices.md  O custo das escritas
+0.463  03-indices.md  O que é um índice
+0.449  03-indices.md  Quando um índice ajuda
+0.436  03-indices.md  Baixa seletividade
+```
+
+O trecho **"O custo das escritas"** lidera, e é ele que responde à pergunta. Você também pode fazer essa busca direto no SQL, usando um trecho gravado como se fosse a pergunta (Terminal B). A primeira linha é o próprio trecho, com similaridade `1.000`:
+
+```sql
+SELECT fonte, titulo,
+       round((1 - (embedding <=> (SELECT embedding FROM chunks WHERE titulo = 'O custo das escritas')))::numeric, 3) AS similaridade
+FROM chunks
+ORDER BY embedding <=> (SELECT embedding FROM chunks WHERE titulo = 'O custo das escritas')
+LIMIT 4;
+```
+
+Por fim, pergunte de verdade (Terminal A) e compare:
+
+```bash
+curl -s -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"pergunta":"Quando um índice pode deixar o banco mais lento?"}' \
+  | jq '{resposta, fontes: [.fontes[] | {fonte, similaridade, rerank}]}'
+```
+
+As `fontes` são os mesmos trechos da busca acima, com os mesmos valores de `similaridade`. A **ordem** pode mudar: o `/ask` reordena pelo `rerank`, e a busca pura ordena só pela similaridade. Assim você enxerga a cadeia completa: **texto → embed → vetor gravado → busca → rerank → resposta**.
+
 ### Se der erro
 
 | Sintoma | O que fazer |
@@ -596,11 +797,11 @@ Repita com uma pergunta fora do material (`"Qual a capital da França?"`): a res
 
 ### Desafio extra
 
-Compare os resultados com e sem o reranker (`RERANK_ENABLED`). Em quais perguntas a ordem dos trechos muda? E rode a consulta SQL direto no banco (em outro terminal, **fora** do container `app`):
+**Markdown na resposta.** A aba **Material** já sabe **renderizar Markdown** (negrito, listas, tabelas e blocos de código). Ajuste o prompt de `responder` para o modelo responder em Markdown (por exemplo, uma lista curta e as fontes `[1]`, `[2]` em **negrito**), pergunte de novo e veja a diferença na tela.
 
-```bash
-docker compose exec pgvector psql -U postgres -d oficina -c "SELECT fonte, titulo FROM chunks LIMIT 5;"
-```
+**Reranker.** Compare os resultados com e sem o reranker (`RERANK_ENABLED`). Em quais perguntas a ordem dos trechos muda?
+
+**Banco.** Repita as consultas da seção "Do embed ao banco e à pergunta" depois de mudar o `corpus/` (por exemplo, acrescentando um `## Título` novo em uma apostila) e indexar de novo: o `count` muda?
 
 ---
 
