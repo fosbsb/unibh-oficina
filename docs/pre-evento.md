@@ -48,6 +48,6 @@ O nome do volume depende do nome da pasta do projeto (`unibh-oficina_ollama_mode
 
 - [ ] Rodou o fluxo completo com uma chave real: etapas 0 a 4 e `docker compose exec app pytest -q`.
 - [ ] Confirmou que os 6 modelos de nuvem respondem na conta free (`gpt-oss:20b` é o padrão).
-- [ ] Testou `python scripts/etapa.py solucao 4` e `preparar 3` para saber o que o aluno verá.
+- [ ] Testou `docker compose exec app python scripts/etapa.py solucao 4` e `preparar 3` para saber o que o aluno verá.
 - [ ] Imprimiu ou projetou [docs/erros-comuns.md](erros-comuns.md) para o apoio.
 - [ ] Combinou com o apoio quem atende qual fileira da sala.

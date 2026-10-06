@@ -43,7 +43,7 @@ Para a oficina não depender do Wi-Fi, baixe tudo antes:
 2. Siga os passos **1 a 3** da seção "Etapa 0" abaixo e confirme que `docker compose up -d` termina sem erro.
 3. Confirme que a página http://localhost:8000 abre.
 
-Na primeira vez, o `docker compose up` baixa as imagens e os modelos locais (`embeddinggemma:300m` e `Qwen3-Reranker-0.6B`, cerca de 1,8 GB), e isso demora alguns minutos. Depois disso eles ficam guardados em um volume do Docker.
+Na primeira vez, o `docker compose up` baixa as imagens e os modelos locais (`embeddinggemma:300m` e `Qwen3-Reranker-0.6B`, cerca de 1,8 GB), e isso pode levar de 5 a 10 minutos (o `docker compose up` só termina quando o download acaba). Depois disso eles ficam guardados em um volume do Docker.
 
 ---
 
@@ -69,7 +69,7 @@ Ambiente de pé e a função `chat_once` devolvendo a resposta do modelo, que vo
    ```bash
    docker compose up -d --build
    ```
-   Na primeira vez, aguarde os modelos locais serem baixados. Acompanhe com `docker compose logs -f ollama-pull`.
+   Na primeira vez, o comando **só devolve o prompt depois que os modelos locais (~1,8 GB) terminam de baixar**, o que levou cerca de 8 minutos em uma conexão comum: não é travamento. Para acompanhar, abra **outro terminal** e rode `docker compose logs -f ollama-pull` (termina com `success`).
 4. **Abra** http://localhost:8000. O selo no canto superior direito mostra o modelo e se há algum problema (chave, Ollama local ou pgvector).
 5. **Entre no container e veja a chamada de API "na mão" com `curl`.** O container `app` já tem `curl` e `jq` instalados, e a sua chave já está no ambiente dele (vem do `.env`): você não precisa instalar nada nem fazer `export`. Entre nele:
    ```bash
