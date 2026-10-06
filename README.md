@@ -8,6 +8,7 @@
 ![Duração](https://img.shields.io/badge/dura%C3%A7%C3%A3o-4h-0ea5e9?style=flat-square)
 ![Nível](https://img.shields.io/badge/n%C3%ADvel-iniciante%20a%20intermedi%C3%A1rio-64748b?style=flat-square)
 ![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-22c55e?style=flat-square)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-fosbsb-0A66C2?style=flat-square)](https://www.linkedin.com/in/fosbsb/)
 
 **IA**
 
@@ -35,6 +36,9 @@
 Em 4 horas, você constrói o **Estuda.AI**, um assistente de estudos da disciplina de Banco de Dados. Etapa por etapa, o app passa a chamar um modelo de linguagem por API, validar o que ele devolve e responder com base em um material próprio, citando a fonte.
 
 O foco não é usar IA para escrever código. É usar IA **dentro** do código.
+
+> [!NOTE]
+> **Sobre o nome.** "Estuda.AI" é apenas um **nome fictício**, criado para esta oficina. Ele **não tem relação** com nenhum produto, serviço, empresa ou marca existente, e qualquer semelhança é mera coincidência. O projeto é **material didático**, sem fins comerciais.
 
 | Etapa | Tempo | O que você constrói | Conceito |
 |---|---|---|---|
@@ -871,7 +875,7 @@ O seu código anterior é guardado em `app/.backup/` antes de ser substituído.
 
 ```text
 app/            seu código (os arquivos com "ETAPA" nos comentários são os seus exercícios)
-  static/       a tela (HTML pronto)
+ |-static/      Telas (HTML pronto)
 corpus/         as apostilas usadas pelo RAG
 etapas/         soluções de referência, testes e perguntas de verificação
 scripts/        etapa.py: prepara ou aplica uma etapa
@@ -879,11 +883,57 @@ docs/           material do instrutor e do apoio (e os GIFs do README em docs/im
 docker-compose.yml, .env.example, db/init.sql
 ```
 
+## Conheça mais da Tecnisys
+
+Os produtos da **Tecnisys** abaixo **não fazem parte do exercício**: estão aqui para quem quiser conhecer onde essas ideias (dados, banco de dados e IA) aparecem em plataformas profissionais. O Estuda.AI, repare, é um projeto didático e **não é** nenhum deles.
+
+### TDP: Tecnisys Data Platform
+
+Distribuição **curada e com suporte** da *Modern Data Stack* open source: Spark, Iceberg, Kafka, Trino, Airflow, NiFi, Superset e outras. A TDP **não é um fork**: a Tecnisys certifica uma combinação testada de projetos Apache e open source, com segurança, governança, ferramentas de instalação e atualização e suporte em português.
+
+- **Duas edições na versão 3.0.0:** *Datacenter* (instalação local, gerenciada pelo Apache Ambari, com HDFS/Ozone e YARN) e *Kubernetes* (nativa de nuvem, com Helm e ArgoCD).
+- **Para quem:** organizações que querem infraestrutura de dados aberta, sem dependência de fornecedor, inclusive em ambientes locais e regulados, e um *lakehouse* (Iceberg ou Delta com Spark e Trino) já integrado.
+- **Documentação:** https://docs.tecnisys.com.br/tdp
+
+### PostgreSYS
+
+Ecossistema **PostgreSQL** curado para produção, em uma distribuição única e com versões testadas em conjunto: PostgreSQL, PgBouncer (pool de conexões), pgBackRest (backup e restauração), Patroni, etcd e HAProxy (alta disponibilidade), e Prometheus, Grafana e Alertmanager (monitoramento). Tudo é instalado e operado pelo **PgSmart**, um painel de controle com **CLI e interface web**.
+
+- **Versão consultada:** PostgreSYS 4.1 (PgSmart 4.1.1).
+- **Extensões:** o PostgreSYS também provisiona **pgvector**, a mesma extensão que guarda os vetores na Etapa 3 desta oficina, e PostGIS.
+- **Documentação:** https://docs.tecnisys.com.br/pgsys
+
+### CLAIM: Corporate Layer for AI Management
+
+Plataforma de **IA empresarial para inteligência documental**: o usuário faz perguntas em linguagem natural sobre os dados da própria organização e recebe respostas baseadas neles. Usa **RAG** com arquitetura multi-tenant, roda **on-premises**, é segura e multilíngue. É a mesma técnica da Etapa 3, em escala corporativa.
+
+- **Site do produto:** https://claim.tecnisys.com.br/pt-br
+- **Documentação:** https://claim.tecnisys.com.br/pt-br/docs (em inglês: https://claim.tecnisys.com.br/en/docs)
+- **Instalação e implantação:** https://github.com/Tecnisys-OSS/claim-deploy (inclui o `claimctl` e os modelos para Helm/Kubernetes, OpenShift e Docker Compose)
+
+> [!NOTE]
+> Os resumos acima foram conferidos com a documentação pública em julho e agosto de 2026. Versões e recursos mudam: consulte sempre os links oficiais para o estado atual.
+
 ## Segurança e privacidade
 
 - A chave de API é pessoal: não a compartilhe e não a envie ao Git.
 - O que você digita no app vai para o ollama.com: **não escreva dados pessoais** durante a oficina.
 - A senha do banco (`oficina`) serve só para este ambiente local. Não reutilize este arranjo em produção.
+
+## Autor
+
+**Flaviano O. Silva**
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-fosbsb-0A66C2?style=flat-square)](https://www.linkedin.com/in/fosbsb/)
+
+Contato, dúvidas e sugestões sobre a oficina: https://www.linkedin.com/in/fosbsb/
+
+## Aviso
+
+- **Nome fictício.** "Estuda.AI" é um nome inventado para esta oficina. Não representa, não é afiliado e não faz referência a nenhum produto, serviço, empresa ou marca existente. O nome não passou por busca de anterioridade nem por registro de marca: se você quiser usar este projeto fora do contexto educacional, **escolha e verifique o seu próprio nome**.
+- **Marcas da Tecnisys.** TDP, PostgreSYS, PgSmart e CLAIM são produtos e marcas da Tecnisys, citados apenas como contexto. O Estuda.AI não é um desses produtos.
+- **Marcas de terceiros.** Ollama, Docker, PostgreSQL, pgvector, FastAPI, Python, Qwen, Gemma, gpt-oss, Nemotron e demais nomes citados pertencem aos seus respectivos titulares. Eles aparecem apenas para identificar as tecnologias usadas na oficina, **sem qualquer afiliação ou endosso**. Os logotipos dos badges são fornecidos pelo [shields.io](https://shields.io).
+- **Uso educacional.** O código é um exemplo para aprender, não um produto pronto. Ele é entregue **no estado em que está, sem garantias** (veja a licença abaixo) e não deve ser usado em produção sem revisão, em especial quanto a segurança, privacidade e custos de uso das APIs.
 
 ## Licença
 
