@@ -1,11 +1,11 @@
 <div align="center">
 
-# Estuda.AI
+# Oficina IA da UniBH - Tecnisys
 
-**Usando um LLM dentro do seu app**: oficina prática da UniBH
+**Estuda.AI: usando um LLM dentro do seu app**
 
 ![Oficina](https://img.shields.io/badge/oficina-UniBH%202026-1e3a8a?style=flat-square)
-![Duração](https://img.shields.io/badge/dura%C3%A7%C3%A3o-~4h-0ea5e9?style=flat-square)
+![Duração](https://img.shields.io/badge/dura%C3%A7%C3%A3o-4h-0ea5e9?style=flat-square)
 ![Nível](https://img.shields.io/badge/n%C3%ADvel-iniciante%20a%20intermedi%C3%A1rio-64748b?style=flat-square)
 ![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-22c55e?style=flat-square)
 
@@ -32,7 +32,7 @@
 
 ---
 
-Oficina da UniBH. Em ~4 horas você constrói, etapa por etapa, um assistente de estudos de Banco de Dados que **usa um modelo de linguagem como parte do sistema**: o app chama o modelo por API, valida o que ele devolve e o ancora em um material próprio.
+Em 4 horas, você constrói o **Estuda.AI**, um assistente de estudos da disciplina de Banco de Dados. Etapa por etapa, o app passa a chamar um modelo de linguagem por API, validar o que ele devolve e responder com base em um material próprio, citando a fonte.
 
 O foco não é usar IA para escrever código. É usar IA **dentro** do código.
 
@@ -49,13 +49,34 @@ O foco não é usar IA para escrever código. É usar IA **dentro** do código.
 ## Como o projeto funciona
 
 ```text
-Seu navegador ──► app (FastAPI, :8000) ──► Ollama Cloud (chat e JSON, com a sua chave)
-                       │
-                       ├──► Ollama local (embeddings e reranking)
-                       └──► pgvector (Postgres que guarda os vetores)
+┌─────────────────────────┐         ┌─────────────────────────┐         ┌─────────────────────────┐
+│ SEU NAVEGADOR           │         │ APP (FastAPI)           │         │ OLLAMA CLOUD            │
+│                         │   HTTP  │                         │  HTTPS  │                         │
+│ a tela do Estuda.AI     │  ────►  │ o código que você       │  ────►  │ chat, quiz e respostas  │
+│ em localhost:8000       │         │ escreve em app/         │         │ usa a sua chave         │
+│                         │         │ porta 8000              │         │ na internet             │
+└─────────────────────────┘         └─────────────────────────┘         └─────────────────────────┘
+                                                 │
+                                  ┌──────────────┴─────────────────┐
+                                  ▼                                ▼
+                     ┌─────────────────────────┐      ┌─────────────────────────┐
+                     │ OLLAMA LOCAL            │      │ PGVECTOR (Postgres 16)  │
+                     │                         │      │                         │
+                     │ embeddings e reranking  │      │ trechos e vetores       │
+                     │ modelos baixados        │      │ da apostila             │
+                     │ container               │      │ container               │
+                     └─────────────────────────┘      └─────────────────────────┘
 ```
 
-Tudo roda em containers com `docker compose`. Você só edita os arquivos da pasta `app/` no VS Code.
+| Caixa | O que faz | Onde roda | Etapa |
+|---|---|---|---|
+| **Seu navegador** | Mostra a tela do Estuda.AI (abas Conexão, Tutor, Quiz e Material) | Sua máquina | todas |
+| **App (FastAPI)** | O código que você escreve em `app/`: monta as mensagens, valida as respostas e orquestra tudo | Container `app` | 0 a 4 |
+| **Ollama Cloud** | O modelo de linguagem que conversa, gera o quiz e redige as respostas (usa a sua chave) | Internet (ollama.com) | 0, 1, 2 e 3 |
+| **Ollama local** | Transforma textos em vetores (embeddings) e reordena os trechos (reranking) | Container `ollama` | 3 |
+| **pgvector** | Guarda os trechos da apostila e os vetores, e busca os mais parecidos com a pergunta | Container `pgvector` | 3 |
+
+O app, o Ollama local e o pgvector sobem juntos, em containers, com um único `docker compose`; o navegador é o seu e o Ollama Cloud fica na internet. Você só edita os arquivos da pasta `app/` no VS Code.
 
 ---
 
@@ -65,17 +86,26 @@ Tudo roda em containers com `docker compose`. Você só edita os arquivos da pas
 - **Pelo menos 12 GB de RAM** na máquina
 - VS Code
 - Uma conta gratuita em [ollama.com](https://ollama.com) com uma **chave de API** (passo 2 abaixo)
-- Cerca de 4 GB livres de disco para as imagens e os modelos locais
+- Pelo menos 10 GB livres de disco para as imagens e os modelos locais
+- [Git](https://git-scm.com/downloads) (opcional: serve para clonar; sem ele, baixe o ZIP)
 
-## Antes do evento (faça em casa)
+### Baixe o projeto
 
-Para a oficina não depender do Wi-Fi, baixe tudo antes:
+O código está em **https://github.com/fosbsb/unibh-oficina**. Escolha uma das duas formas.
 
-1. Clone ou baixe este repositório e abra a pasta no VS Code.
-2. Siga os passos **1 a 3** da seção "Etapa 0" abaixo e confirme que `docker compose up -d` termina sem erro.
-3. Confirme que a página http://localhost:8000 abre.
+**Opção 1: clonar com Git** (recomendada)
 
-Na primeira vez, o `docker compose up` baixa as imagens e os modelos locais (`embeddinggemma:300m` e `Qwen3-Reranker-0.6B`, cerca de 1,8 GB), e isso pode levar de 5 a 10 minutos (o `docker compose up` só termina quando o download acaba). Depois disso eles ficam guardados em um volume do Docker.
+```bash
+git clone https://github.com/fosbsb/unibh-oficina.git
+cd unibh-oficina
+```
+
+**Opção 2: baixar o ZIP** (sem Git)
+
+1. Abra o link acima, clique no botão verde **Code** e depois em **Download ZIP** (ou baixe direto de [main.zip](https://github.com/fosbsb/unibh-oficina/archive/refs/heads/main.zip)).
+2. Extraia o arquivo. Será criada a pasta `unibh-oficina-main`.
+
+Nas duas formas, abra a **pasta do projeto** no VS Code (*File > Open Folder*) e use o terminal dessa pasta para os comandos deste README.
 
 ---
 
@@ -87,21 +117,58 @@ Antes de qualquer coisa, você precisa entender o contrato: um LLM é um serviç
 
 ### Objetivo
 
-Ambiente de pé e a função `chat_once` devolvendo a resposta do modelo, que você vai ver na aba **Conexão** da tela.
+Ambiente no ar e a função `chat_once` devolvendo a resposta do modelo, que você vai ver na aba **Conexão** da tela.
 
 ### Passo a passo
 
-1. **Crie sua chave.** Entre em [ollama.com](https://ollama.com), vá em *Settings > API keys*, crie uma chave e copie a chave **inteira** (ela tem duas partes separadas por um ponto).
+1. **Crie sua chave.** Entre em [ollama.com](https://ollama.com), vá em *Settings > API keys*, crie uma chave e copie a chave **inteira**.
+
+   > [!NOTE]
+   > **Como é a chave:** ela tem **57 caracteres**, em duas partes separadas por **um ponto (`.`)**: **32** caracteres, o ponto e mais **24**.
+   >
+   > ```text
+   > xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxx
+   > ```
+   >
+   > Se faltar a parte depois do ponto, a chave está cortada e o app mostrará o erro 401 ("Chave inválida").
+
+   > [!TIP]
+   > **Acompanhe o seu uso.** Os modelos de nuvem consomem a cota **gratuita** da sua conta (*Included usage*), que se renova periodicamente (a tela mostra "Resets in…"). Em [ollama.com/settings](https://ollama.com/settings) você vê quanto já usou, quando a cota renova e quais modelos você chamou. A conta gratuita só aceita estes modelos de nuvem: `gpt-oss:20b`, `gpt-oss:120b`, `gemma4:31b`, `nemotron-3-nano:30b`, `nemotron-3-super` e `nemotron-3-ultra`. A oficina usa o `gpt-oss:20b`.
+   >
+   > No exemplo abaixo, 92 requisições ao `gpt-oss:20b` consumiram só 0,4% da cota gratuita, o que dá uma ideia do tamanho do consumo da oficina.
+
+   ![Página Included usage em ollama.com/settings: modelos gratuitos, porcentagem de uso, renovação da cota e requisições por modelo](docs/img/ollama-uso.png)
+
 2. **Crie o arquivo `.env`.** Na raiz do projeto, copie o modelo e edite:
    ```bash
    cp .env.example .env
    ```
-   Abra o `.env` e troque `cole-sua-chave-aqui` pela sua chave. **Nunca** envie este arquivo para o Git.
+   Abra o `.env` e troque `cole-sua-chave-aqui` pela sua chave, no formato acima e sem espaços nem aspas (`OLLAMA_API_KEY=sua-chave-inteira`). **Nunca** envie este arquivo para o Git.
 3. **Suba o ambiente:**
    ```bash
    docker compose up -d --build
    ```
    Na primeira vez, o comando **só devolve o prompt depois que os modelos locais (~1,8 GB) terminam de baixar**, o que levou cerca de 8 minutos em uma conexão comum: não é travamento. Para acompanhar, abra **outro terminal** e rode `docker compose logs -f ollama-pull` (termina com `success`).
+
+   Quando terminar, a saída termina com `Healthy` para `ollama` e `pgvector`, `Exited` para `ollama-pull` (ele só baixa os modelos e sai) e `Started` para `app`, como no exemplo abaixo (aqui as imagens já estavam em cache, por isso foi rápido):
+
+   ![Saída do docker compose up -d --build com todos os serviços no ar](docs/img/docker-compose-up.png)
+
+   Para conferir que tudo está no ar, liste os containers:
+
+   ```bash
+   docker ps
+   ```
+
+   Você deve ver os três (`app`, `pgvector` e `ollama`), com `Up` e `(healthy)` nos dois últimos:
+
+   ```text
+   CONTAINER ID   IMAGE                    COMMAND                  CREATED          STATUS                    PORTS                      NAMES
+   60842ac0681a   unibh-oficina-app        "uvicorn app.main:ap…"   20 seconds ago   Up 11 seconds             127.0.0.1:8000->8000/tcp   unibh-oficina-app-1
+   a828fff04c52   pgvector/pgvector:pg16   "docker-entrypoint.s…"   20 seconds ago   Up 20 seconds (healthy)   5432/tcp                   unibh-oficina-pgvector-1
+   2eddc309ce6d   ollama/ollama            "/bin/ollama serve"      20 seconds ago   Up 20 seconds (healthy)   11434/tcp                  unibh-oficina-ollama-1
+   ```
+
 4. **Abra** http://localhost:8000. O selo no canto superior direito mostra o modelo e se há algum problema (chave, Ollama local ou pgvector).
 5. **Entre no container e veja a chamada de API "na mão" com `curl`.** O container `app` já tem `curl` e `jq` instalados, e a sua chave já está no ambiente dele (vem do `.env`): você não precisa instalar nada nem fazer `export`. Entre nele:
    ```bash
@@ -111,7 +178,7 @@ Ambiente de pé e a função `chat_once` devolvendo a resposta do modelo, que vo
    ```bash
    echo ${#OLLAMA_API_KEY}
    ```
-   Se aparecer `0`, a chave não chegou: confira o `.env` e rode `docker compose up -d` (fora do container). Agora faça, "na mão", a mesma chamada que o app fará. O `| jq` deixa o JSON legível:
+   Deve aparecer `57`. Se aparecer `0`, a chave não chegou; se for outro número, a chave está cortada ou com texto a mais: confira o `.env` e rode `docker compose up -d` (fora do container). Agora faça, "na mão" (dentro do container), a mesma chamada que o app fará. O `| jq` deixa o JSON legível:
    ```bash
    curl -s https://ollama.com/api/chat \
      -H "Authorization: Bearer $OLLAMA_API_KEY" \
@@ -133,6 +200,8 @@ Ambiente de pé e a função `chat_once` devolvendo a resposta do modelo, que vo
    ```bash
    curl -s http://localhost:8000/health | jq
    ```
+
+   > [!IMPORTANT]
    > **Todos os `curl` deste README rodam dentro do container.** Sempre que abrir um terminal novo, entre de novo com `docker compose exec app bash`. Como o container é Linux, os comandos são iguais no Windows, no macOS e no Linux, sem `export` e sem problemas de aspas no PowerShell. O `pytest` também pode ser rodado lá dentro, sem o prefixo `docker compose exec app`.
 
 6. **Implemente `chat_once`** em [app/llm.py](app/llm.py), seguindo os comentários do arquivo:
@@ -151,6 +220,10 @@ docker compose exec app pytest etapas/etapa-0
 ```
 
 Todos os testes devem terminar em `PASSED`, com a linha final `N passed`. Cada teste imprime o que fez (o corpo enviado, a resposta recebida). O teste que usa o modelo de verdade só roda se a sua chave estiver no `.env`.
+
+Assim aparece quando está tudo certo (5 testes `PASSED`):
+
+![Saída do pytest da etapa 0 com os 5 testes passando](docs/img/pytest-etapa-0.png)
 
 #### 2. Pelo `curl`
 
@@ -193,6 +266,7 @@ Se, em vez disso, aparecer uma faixa vermelha, leia a mensagem: "Chave inválida
 | Porta 8000 ocupada | Feche o programa que usa a porta ou troque `8000` em `docker-compose.yml` |
 | `curl: command not found` ou `jq: command not found` | A imagem do app é antiga: saia do container e rode `docker compose up -d --build` |
 | `echo ${#OLLAMA_API_KEY}` mostra `0` | A chave não chegou ao container: confira o `.env` e rode `docker compose up -d` |
+| `echo ${#OLLAMA_API_KEY}` não mostra `57` | A chave está cortada ou tem espaço/aspas: copie de novo a chave inteira (32 + `.` + 24) |
 
 Mais casos em [docs/erros-comuns.md](docs/erros-comuns.md).
 
@@ -216,6 +290,7 @@ A aba **Tutor** responde em streaming, agindo como tutor de Banco de Dados.
 
 ### Experimente com curl
 
+> [!NOTE]
 > Rode estes comandos **dentro do container** (`docker compose exec app bash`), onde `curl`, `jq` e a chave já estão disponíveis.
 
 Com `"stream": true`, a nuvem devolve **uma linha JSON por pedaço de texto**. O `-N` desliga o buffer do `curl` para você ver os pedaços chegando, e o `system` define o papel do modelo:
@@ -268,7 +343,7 @@ Sem o `| jq ...` no final, você vê o JSON inteiro, com `thinking`, tempos e co
 ### Passo a passo
 
 1. Abra [app/chat.py](app/chat.py).
-2. Escreva o `SYSTEM_PROMPT`: quem o modelo é, em que idioma responde, o que deve e o que não deve fazer (por exemplo, guiar com perguntas em vez de dar a resposta de exercícios). A tela mostra **texto puro**: peça também resposta em texto corrido, **sem Markdown** (senão aparecem `**` e tabelas quebradas) e curta.
+2. Escreva o `SYSTEM_PROMPT`: quem o modelo é, em que idioma responde, o que deve e o que não deve fazer (por exemplo, guiar com perguntas em vez de dar a resposta de exercícios). Peça também resposta em **texto corrido, sem Markdown**, e curta (na seção "Desafio extra" abaixo você ativa o Markdown).
 3. Implemente `stream_chat`:
    - monte o `payload` com `stream: True` e a lista `[system, *messages]`;
    - use `client.stream("POST", "/api/chat", json=payload)`;
@@ -317,6 +392,8 @@ O resultado é o texto da resposta, chegando aos poucos.
 
 ### Desafio extra
 
+**Markdown na resposta.** A tela do Tutor já sabe **renderizar Markdown** (negrito, listas, tabelas e blocos de código). Ajuste o `SYSTEM_PROMPT` para o tutor responder em Markdown (por exemplo, listas para comparar conceitos e blocos ```` ```sql ```` para código), pergunte de novo e veja a diferença na tela.
+
 Faça o tutor lembrar do que foi dito antes (o histórico já chega em `messages`). Depois, limite o histórico às últimas 6 mensagens e explique por que isso importa (custo e tamanho de contexto).
 
 ---
@@ -335,6 +412,7 @@ A aba **Quiz** gera questões e o app só mostra o que passou na validação.
 
 ### Experimente com curl
 
+> [!NOTE]
 > Rode dentro do container (`docker compose exec app bash`).
 
 Para a nuvem, um quiz é só uma conversa em que o `system` exige JSON. O primeiro `jq` extrai o texto da resposta, e o segundo tenta **ler esse texto como JSON** e formatá-lo:
@@ -425,6 +503,7 @@ A aba **Material** responde com base em `corpus/` e mostra as fontes usadas.
 
 ### Experimente com curl
 
+> [!NOTE]
 > Rode dentro do container (`docker compose exec app bash`). Dele, o Ollama **local** é alcançado pelo nome `ollama` (`http://ollama:11434`) e não precisa de chave.
 
 **1. Embedding:** transforma um texto em um vetor de 768 números. Textos de significado parecido geram vetores próximos. O `jq` resume a resposta, que seria uma lista enorme de números:
